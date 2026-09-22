@@ -13,6 +13,7 @@ builder.Services.AddSingleton<IMouseController, MouseController>();
 builder.Services.AddSingleton<IKeyboardController, KeyboardController>();
 builder.Services.AddSingleton<IClipboardController, ClipboardController>();
 builder.Services.AddSingleton<IWindowController, WindowController>();
+builder.Services.AddSingleton<IUiAutomationController, UiAutomationController>();
 builder.Services.AddSingleton<UiOperationGate>();
 
 var app = builder.Build();
@@ -55,6 +56,30 @@ app.Use(async (context, next) =>
         log.Write("WARN", exception.Message);
         context.Response.StatusCode = StatusCodes.Status409Conflict;
         await context.Response.WriteAsJsonAsync(ApiErrors.WindowActivationFailed(exception.Message));
+    }
+    catch (UiElementNotFoundException exception)
+    {
+        log.Write("WARN", exception.Message);
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsJsonAsync(ApiErrors.UiElementNotFound(exception.Message));
+    }
+    catch (UiElementAmbiguousException exception)
+    {
+        log.Write("WARN", exception.Message);
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsJsonAsync(ApiErrors.UiElementAmbiguous(exception.Message));
+    }
+    catch (UiPatternUnsupportedException exception)
+    {
+        log.Write("WARN", exception.Message);
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsJsonAsync(ApiErrors.UiPatternUnsupported(exception.Message));
+    }
+    catch (UiAutomationOperationException exception)
+    {
+        log.Write("ERROR", $"{exception.Message} {exception.InnerException?.Message}");
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(ApiErrors.UiAutomationFailed(exception.Message));
     }
     catch (Exception exception) when (exception is WindowsApiException or PlatformNotSupportedException)
     {
@@ -100,6 +125,17 @@ app.MapPost("/windows/activate", (ActivateWindowRequest request, IWindowControll
     gate.RunAsync(() => Task.FromResult(windows.Activate(request.Id)), token));
 app.MapGet("/mouse/position", (IDesktopService desktop, IMouseController mouse, UiOperationGate gate, CancellationToken token) =>
     gate.RunAsync(() => Task.FromResult(mouse.GetPosition(desktop.RequireScreenInfo())), token));
+app.MapGet("/ui/tree", (string windowId, int? depth, int? maxNodes, IDesktopService desktop,
+    IUiAutomationController ui, UiOperationGate gate, CancellationToken token) => gate.RunAsync(() =>
+        Task.FromResult(ui.Tree(windowId, depth ?? 3, maxNodes ?? 500, desktop.RequireScreenInfo().VirtualScreen)), token));
+app.MapPost("/ui/find", (UiFindRequest request, IDesktopService desktop, IUiAutomationController ui,
+    UiOperationGate gate, CancellationToken token) => gate.RunAsync(() =>
+        Task.FromResult(ui.Find(request, desktop.RequireScreenInfo().VirtualScreen)), token));
+app.MapPost("/ui/action", (UiActionRequest request, IDesktopService desktop, IUiAutomationController ui,
+    UiOperationGate gate, CancellationToken token) => gate.RunAsync(() =>
+        Task.FromResult(ui.Act(request, desktop.RequireScreenInfo().VirtualScreen)), token));
+app.MapPost("/ui/text", (UiTextRequest request, IUiAutomationController ui, UiOperationGate gate,
+    CancellationToken token) => gate.RunAsync(() => Task.FromResult(ui.Text(request)), token));
 
 app.MapPost("/mouse/move", (MoveRequest request, IDesktopService desktop, IMouseController mouse, UiOperationGate gate, CancellationToken token) =>
     Command(gate, token, log, "mouse/move", () => mouse.Move(request.X, request.Y, desktop.RequireScreenInfo())));

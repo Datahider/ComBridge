@@ -21,6 +21,10 @@ public static class ApiErrors
     public static ApiError WindowsApi(string message) => new("windows_api_error", message);
     public static ApiError ClipboardTextUnavailable(string message) => new("clipboard_text_unavailable", message);
     public static ApiError WindowActivationFailed(string message) => new("window_activation_failed", message);
+    public static ApiError UiElementNotFound(string message) => new("ui_element_not_found", message);
+    public static ApiError UiElementAmbiguous(string message) => new("ui_element_ambiguous", message);
+    public static ApiError UiPatternUnsupported(string message) => new("ui_pattern_unsupported", message);
+    public static ApiError UiAutomationFailed(string message) => new("ui_automation_failed", message);
 }
 
 public sealed class RequestValidationException(string message) : Exception(message);

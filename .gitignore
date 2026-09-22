@@ -1,7 +1,9 @@
 bin/
 obj/
-dist/
+dist/*
+!dist/win-x64/
+dist/win-x64/*
+!dist/win-x64/ComBridge.exe
 .vs/
 *.user
 *.log
-

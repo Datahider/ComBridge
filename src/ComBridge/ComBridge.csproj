@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ComBridge</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>0.0.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>

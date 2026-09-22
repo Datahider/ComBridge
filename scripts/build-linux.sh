@@ -10,4 +10,5 @@ dotnet publish src/ComBridge/ComBridge.csproj -c Release -r win-x64 --self-conta
   -o dist/win-x64
 
 test -f dist/win-x64/ComBridge.exe
-
+zip -9 -j dist/ComBridge-win-x64.zip dist/win-x64/ComBridge.exe
+test -f dist/ComBridge-win-x64.zip

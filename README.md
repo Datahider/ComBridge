@@ -59,6 +59,7 @@ C:\Tools\ComBridge\ComBridge.exe --port 8088
 ```
 
 Адрес можно задать `--address`; не-loopback адрес отклоняется. Лог пишется в `%LOCALAPPDATA%\ComBridge\logs\combridge-YYYYMMDD.log`.
+Отсутствующие и некорректные значения `--port`/`--address` приводят к немедленному отказу запуска, а не к подстановке значений по умолчанию.
 
 Для автозапуска при входе создать в Task Scheduler задачу `At log on` для нужного пользователя с `Run only when user is logged on`. Не включать `Run whether user is logged on or not`: такая задача не получит видимый desktop.
 
@@ -87,4 +88,3 @@ curl --fail -H 'Content-Type: application/json' \
 - SSH-сеанс сам по себе не даёт доступ к интерактивному desktop; EXE нужно запустить при входе пользователя.
 - GDI-захват может не видеть DRM-защищённое и некоторое GPU-ускоренное содержимое.
 - Linux-тесты не подтверждают фактическую работу Win32, DPI и GUI. Это проверяется на Windows отдельно.
-

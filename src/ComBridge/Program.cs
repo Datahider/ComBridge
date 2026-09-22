@@ -87,13 +87,13 @@ app.MapPost("/mouse/scroll", (ScrollRequest request, IDesktopService desktop, IM
 app.MapPost("/mouse/drag", (DragRequest request, IDesktopService desktop, IMouseController mouse, UiOperationGate gate, CancellationToken token) =>
 {
     RequestValidator.Validate(request);
-    return gate.RunAsync(async () => { log.Write("INFO", "Command mouse/drag"); await mouse.DragAsync(request, desktop.RequireScreenInfo(), token); return new CommandResult(true, "mouse/drag"); }, token);
+    return gate.RunAsync(async () => { log.Write("INFO", "Command mouse/drag"); await mouse.DragAsync(request, desktop.RequireScreenInfo(), token); log.Write("INFO", "Completed mouse/drag"); return new CommandResult(true, "mouse/drag"); }, token);
 });
 app.MapPost("/keyboard/type", (TypeRequest request, IKeyboardController keyboard, UiOperationGate gate, CancellationToken token) =>
 {
     RequestValidator.Validate(request);
     log.Write("INFO", $"Command keyboard/type length={request.Text.Length}");
-    return gate.RunAsync(() => { keyboard.Type(request.Text); return Task.FromResult(new CommandResult(true, "keyboard/type")); }, token);
+    return gate.RunAsync(() => { keyboard.Type(request.Text); log.Write("INFO", "Completed keyboard/type"); return Task.FromResult(new CommandResult(true, "keyboard/type")); }, token);
 });
 app.MapPost("/keyboard/hotkey", (HotkeyRequest request, IKeyboardController keyboard, UiOperationGate gate, CancellationToken token) =>
 {
@@ -125,8 +125,16 @@ public sealed record CommandLineOptions(string Address, int Port)
         var address = "127.0.0.1"; var port = 8088;
         for (var index = 0; index < args.Length; index++)
         {
-            if (args[index] == "--port" && index + 1 < args.Length && int.TryParse(args[++index], out var value)) port = value;
-            else if (args[index] == "--address" && index + 1 < args.Length) address = args[++index];
+            if (args[index] == "--port")
+            {
+                if (++index >= args.Length || !int.TryParse(args[index], out port))
+                    throw new ArgumentException("--port requires an integer value.");
+            }
+            else if (args[index] == "--address")
+            {
+                if (++index >= args.Length) throw new ArgumentException("--address requires a value.");
+                address = args[index];
+            }
         }
         if (port is < 1 or > 65535) throw new ArgumentException("--port must be between 1 and 65535.");
         if (!System.Net.IPAddress.TryParse(address, out var ip) || !System.Net.IPAddress.IsLoopback(ip))

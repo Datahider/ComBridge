@@ -37,6 +37,10 @@ Linux/Codex -> SSH tunnel -> 127.0.0.1:8088 -> ComBridge -> Win32 -> Windows des
 | GET | `/windows` | Видимые верхнеуровневые окна: id, title, processId, bounds, minimized |
 | POST | `/windows/activate` | `{ "id": "0x123ABC" }`; восстанавливает и выводит окно на передний план |
 | GET | `/mouse/position` | Win32-координаты курсора и координаты PNG |
+| GET | `/ui/tree` | UI Automation-дерево окна: `windowId`, `depth`, `maxNodes` |
+| POST | `/ui/find` | Поиск UIA-элементов по name/automationId/controlType/className |
+| POST | `/ui/action` | Действия `focus`, `invoke`, `select`, `expand`, `collapse`, `setValue` |
+| POST | `/ui/text` | Получение текста через UIA Text/Value Pattern |
 | POST | `/mouse/move` | `{ "x": 540, "y": 380 }` |
 | POST | `/mouse/click` | `{ "x": 540, "y": 380, "button": "left", "count": 1 }`; button: left/right/middle, count: 1/2 |
 | POST | `/mouse/scroll` | `{ "delta": -120, "x": 540, "y": 380 }`; x/y оба опциональны |
@@ -55,6 +59,12 @@ Linux/Codex -> SSH tunnel -> 127.0.0.1:8088 -> ComBridge -> Win32 -> Windows des
 `GET /screen?monitor=0` возвращает только указанный монитор. `GET /screen?x=0&y=0&width=800&height=600` возвращает область в координатах полного `/screen`. `monitor` нельзя смешивать с x/y/width/height; для области обязательны все четыре параметра. Допустимы `format=png` и `format=jpeg`; для JPEG есть `quality=1..100` (по умолчанию 80).
 
 `/windows` возвращает `desktopBounds` в Win32-координатах и `imageBounds` в координатах полного `/screen`. ID окна — непрозрачная hex-строка, действительная только до закрытия окна.
+
+### UI Automation
+
+UI Automation даёт семантический доступ к элементам Windows без клика по пикселям. Все UIA-запросы привязаны к `windowId` из `/windows`. Селектор имеет опциональные `name`, `automationId`, `controlType`, `className`; нужно задать хотя бы одно поле, все заданные поля сопоставляются точно без учёта регистра. `/ui/action` требует ровно одно совпадение: ноль даёт HTTP 404, несколько — 409. `setValue` требует `value`; значение не логируется.
+
+`GET /ui/tree?windowId=0x123ABC&depth=3&maxNodes=500` возвращает плоский список с `index`, `parentIndex` и `depth`. Пределы: depth 0–10, maxNodes 1–2000. Границы элементов возвращаются и в desktop-, и в image-координатах. Качество UIA-дерева зависит от целевого приложения; нестандартные контролы 1С и других программ могут не публиковать имена, patterns или текст. Это не маскируется координатным обходом внутри UIA API.
 
 ## Сборка на Linux
 
@@ -93,6 +103,10 @@ curl --fail 'http://127.0.0.1:18088/screen?monitor=0&format=jpeg&quality=70' --o
 curl --fail http://127.0.0.1:18088/windows
 curl --fail -H 'Content-Type: application/json' \
   -d '{"id":"0x123ABC"}' http://127.0.0.1:18088/windows/activate
+curl --fail 'http://127.0.0.1:18088/ui/tree?windowId=0x123ABC&depth=3&maxNodes=500'
+curl --fail -H 'Content-Type: application/json' \
+  -d '{"windowId":"0x123ABC","selector":{"name":"Открыть","controlType":"Button"},"action":"invoke"}' \
+  http://127.0.0.1:18088/ui/action
 curl --fail -H 'Content-Type: application/json' \
   -d '{"x":540,"y":380,"button":"left","count":1}' \
   http://127.0.0.1:18088/mouse/click

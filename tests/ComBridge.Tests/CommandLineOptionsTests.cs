@@ -28,9 +28,17 @@ public sealed class CommandLineOptionsTests
     [Theory]
     [InlineData("0")]
     [InlineData("65536")]
+    [InlineData("not-a-number")]
     public void InvalidPortIsRejected(string port)
     {
         Assert.Throws<ArgumentException>(() => CommandLineOptions.Parse(["--port", port]));
     }
-}
 
+    [Theory]
+    [InlineData("--port")]
+    [InlineData("--address")]
+    public void MissingOptionValueIsRejected(string option)
+    {
+        Assert.Throws<ArgumentException>(() => CommandLineOptions.Parse([option]));
+    }
+}

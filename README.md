@@ -30,8 +30,11 @@ Linux/Codex -> SSH tunnel -> 127.0.0.1:8088 -> ComBridge -> Win32 -> Windows des
 | Method | Path | Body/result |
 |---|---|---|
 | GET | `/health` | status, version, sessionId, desktopAvailable, screenWidth, screenHeight |
-| GET | `/screen` | `image/png`, весь виртуальный desktop |
+| GET | `/screen` | PNG/JPEG всего desktop, монитора или прямоугольной области |
 | GET | `/screen/info` | virtualScreen, imageOffset, monitors |
+| GET | `/windows` | Видимые верхнеуровневые окна: id, title, processId, bounds, minimized |
+| POST | `/windows/activate` | `{ "id": "0x123ABC" }`; восстанавливает и выводит окно на передний план |
+| GET | `/mouse/position` | Win32-координаты курсора и координаты PNG |
 | POST | `/mouse/move` | `{ "x": 540, "y": 380 }` |
 | POST | `/mouse/click` | `{ "x": 540, "y": 380, "button": "left", "count": 1 }`; button: left/right/middle, count: 1/2 |
 | POST | `/mouse/scroll` | `{ "delta": -120, "x": 540, "y": 380 }`; x/y оба опциональны |
@@ -44,6 +47,12 @@ Linux/Codex -> SSH tunnel -> 127.0.0.1:8088 -> ComBridge -> Win32 -> Windows des
 Горячие клавиши: CTRL, ALT, SHIFT, WIN, ENTER, ESC, TAB, BACKSPACE, DELETE, SPACE, UP, DOWN, LEFT, RIGHT, HOME, END, PAGEUP, PAGEDOWN, F1–F12, A–Z, 0–9. Имена нечувствительны к регистру. Клавиши отпускаются в обратном порядке.
 
 Буфер обмена работает только с Unicode-текстом. Если `CF_UNICODETEXT` отсутствует, GET возвращает HTTP 409 и `clipboard_text_unavailable`. Ошибка открытия буфера не маскируется повторами. Максимальная длина при POST — 10 000 000 UTF-16 code units. Сам текст в лог не записывается.
+
+### Снимки без масштабирования и поиск окон
+
+`GET /screen?monitor=0` возвращает только указанный монитор. `GET /screen?x=0&y=0&width=800&height=600` возвращает область в координатах полного `/screen`. `monitor` нельзя смешивать с x/y/width/height; для области обязательны все четыре параметра. Допустимы `format=png` и `format=jpeg`; для JPEG есть `quality=1..100` (по умолчанию 80).
+
+`/windows` возвращает `desktopBounds` в Win32-координатах и `imageBounds` в координатах полного `/screen`. ID окна — непрозрачная hex-строка, действительная только до закрытия окна.
 
 ## Сборка на Linux
 
@@ -78,6 +87,10 @@ ssh -N -L 18088:127.0.0.1:8088 testpc
 ```bash
 curl --fail http://127.0.0.1:18088/health
 curl --fail http://127.0.0.1:18088/screen --output screen.png
+curl --fail 'http://127.0.0.1:18088/screen?monitor=0&format=jpeg&quality=70' --output monitor.jpg
+curl --fail http://127.0.0.1:18088/windows
+curl --fail -H 'Content-Type: application/json' \
+  -d '{"id":"0x123ABC"}' http://127.0.0.1:18088/windows/activate
 curl --fail -H 'Content-Type: application/json' \
   -d '{"x":540,"y":380,"button":"left","count":1}' \
   http://127.0.0.1:18088/mouse/click

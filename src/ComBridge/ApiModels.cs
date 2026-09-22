@@ -6,6 +6,11 @@ public sealed record ScrollRequest(int Delta, int? X = null, int? Y = null);
 public sealed record DragRequest(int FromX, int FromY, int ToX, int ToY, int DurationMs = 500);
 public sealed record TypeRequest(string Text);
 public sealed record HotkeyRequest(IReadOnlyList<string> Keys);
+public sealed record ClipboardTextRequest(string Text);
+public sealed record ClipboardTextResponse(string Text, int Length)
+{
+    public static ClipboardTextResponse Create(string text) => new(text, text.Length);
+}
 public sealed record ApiError(string Error, string Message);
 public sealed record CommandResult(bool Success, string Action);
 
@@ -14,10 +19,12 @@ public static class ApiErrors
     public static ApiError InvalidRequest(string message) => new("invalid_request", message);
     public static ApiError DesktopUnavailable(string message) => new("desktop_unavailable", message);
     public static ApiError WindowsApi(string message) => new("windows_api_error", message);
+    public static ApiError ClipboardTextUnavailable(string message) => new("clipboard_text_unavailable", message);
 }
 
 public sealed class RequestValidationException(string message) : Exception(message);
 public sealed class DesktopUnavailableException(string message) : Exception(message);
+public sealed class ClipboardTextUnavailableException(string message) : Exception(message);
 public sealed class WindowsApiException(string operation, int error_code)
     : Exception($"{operation} failed with Win32 error {error_code}.")
 {
@@ -59,5 +66,11 @@ public static class RequestValidator
             throw new RequestValidationException("keys must contain at least one key.");
         if (request.Keys.Count > 32) throw new RequestValidationException("too many keys.");
     }
-}
 
+    public static void Validate(ClipboardTextRequest request)
+    {
+        if (request.Text is null) throw new RequestValidationException("text is required.");
+        if (request.Text.Length > 10_000_000)
+            throw new RequestValidationException("text exceeds 10000000 UTF-16 code units.");
+    }
+}

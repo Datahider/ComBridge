@@ -13,6 +13,7 @@ internal static class NativeMethods
     internal const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020, MOUSEEVENTF_MIDDLEUP = 0x0040;
     internal const uint MOUSEEVENTF_WHEEL = 0x0800, MOUSEEVENTF_VIRTUALDESK = 0x4000, MOUSEEVENTF_ABSOLUTE = 0x8000;
     internal const uint KEYEVENTF_KEYUP = 0x0002, KEYEVENTF_UNICODE = 0x0004;
+    internal const uint CF_UNICODETEXT = 13, GMEM_MOVEABLE = 0x0002;
 
     [StructLayout(LayoutKind.Sequential)] internal struct RECT { internal int Left, Top, Right, Bottom; }
     [StructLayout(LayoutKind.Sequential)] internal struct MONITORINFO { internal uint cbSize; internal RECT rcMonitor, rcWork; internal uint dwFlags; }
@@ -47,5 +48,15 @@ internal static class NativeMethods
     [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool DeleteObject(nint obj);
     [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool DeleteDC(nint dc);
     [DllImport("user32.dll", SetLastError = true)] internal static extern uint SendInput(uint count, INPUT[] inputs, int size);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool OpenClipboard(nint owner);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool CloseClipboard();
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool EmptyClipboard();
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsClipboardFormatAvailable(uint format);
+    [DllImport("user32.dll", SetLastError = true)] internal static extern nint GetClipboardData(uint format);
+    [DllImport("user32.dll", SetLastError = true)] internal static extern nint SetClipboardData(uint format, nint memory);
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern nint GlobalAlloc(uint flags, nuint bytes);
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern nint GlobalLock(nint memory);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GlobalUnlock(nint memory);
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern nint GlobalFree(nint memory);
+    [DllImport("kernel32.dll", SetLastError = true)] internal static extern nuint GlobalSize(nint memory);
 }
-

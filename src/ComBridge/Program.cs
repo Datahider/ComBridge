@@ -11,6 +11,7 @@ builder.Services.AddSingleton<IDesktopService, DesktopService>();
 builder.Services.AddSingleton<IScreenCapture, ScreenCapture>();
 builder.Services.AddSingleton<IMouseController, MouseController>();
 builder.Services.AddSingleton<IKeyboardController, KeyboardController>();
+builder.Services.AddSingleton<IClipboardController, ClipboardController>();
 builder.Services.AddSingleton<UiOperationGate>();
 
 var app = builder.Build();
@@ -41,6 +42,12 @@ app.Use(async (context, next) =>
         log.Write("ERROR", exception.Message);
         context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
         await context.Response.WriteAsJsonAsync(ApiErrors.DesktopUnavailable(exception.Message));
+    }
+    catch (ClipboardTextUnavailableException exception)
+    {
+        log.Write("WARN", exception.Message);
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsJsonAsync(ApiErrors.ClipboardTextUnavailable(exception.Message));
     }
     catch (Exception exception) when (exception is WindowsApiException or PlatformNotSupportedException)
     {
@@ -100,6 +107,24 @@ app.MapPost("/keyboard/hotkey", (HotkeyRequest request, IKeyboardController keyb
     RequestValidator.Validate(request);
     _ = InputFactory.Hotkey(request.Keys);
     return Command(gate, token, log, "keyboard/hotkey", () => keyboard.Hotkey(request.Keys));
+});
+app.MapGet("/clipboard/text", (IClipboardController clipboard, UiOperationGate gate, CancellationToken token) =>
+    gate.RunAsync(() =>
+    {
+        var text = clipboard.GetText();
+        log.Write("INFO", $"Command clipboard/get length={text.Length}");
+        return Task.FromResult(ClipboardTextResponse.Create(text));
+    }, token));
+app.MapPost("/clipboard/text", (ClipboardTextRequest request, IClipboardController clipboard, UiOperationGate gate, CancellationToken token) =>
+{
+    RequestValidator.Validate(request);
+    return gate.RunAsync(() =>
+    {
+        log.Write("INFO", $"Command clipboard/set length={request.Text.Length}");
+        clipboard.SetText(request.Text);
+        log.Write("INFO", "Completed clipboard/set");
+        return Task.FromResult(new CommandResult(true, "clipboard/set"));
+    }, token);
 });
 
 await app.RunAsync();

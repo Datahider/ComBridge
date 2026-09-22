@@ -2,7 +2,7 @@
 
 ComBridge — локальный HTTP-мост между ИИ-агентом и интерактивным рабочим столом Windows 10/11 x64. Приложение делает скриншоты и отправляет события мыши/клавиатуры через Win32 API. Оно не знает о конкретных тестируемых приложениях.
 
-Проект находится в стадии pre-alpha и версионируется как `0.0.x`. Готовый `ComBridge.exe` публикуется и в `dist/win-x64/`, и как asset в [GitHub Releases](https://github.com/Datahider/ComBridge/releases).
+Проект находится в стадии pre-alpha и версионируется как `0.0.x`. Архив `dist/ComBridge-win-x64.zip` с готовым EXE хранится в Git. Сам `ComBridge.exe` публикуется как asset в [GitHub Releases](https://github.com/Datahider/ComBridge/releases) для прямого скачивания.
 
 ## Архитектура и безопасность
 
@@ -62,7 +62,7 @@ Linux/Codex -> SSH tunnel -> 127.0.0.1:8088 -> ComBridge -> Win32 -> Windows des
 bash scripts/build-linux.sh
 ```
 
-Результат: `dist/win-x64/ComBridge.exe`. Скрипт сначала запускает тесты, затем `dotnet publish` для `win-x64`, self-contained single-file.
+Результаты: `dist/win-x64/ComBridge.exe` и версионируемый `dist/ComBridge-win-x64.zip`. Скрипт сначала запускает тесты, затем `dotnet publish` для `win-x64`, self-contained single-file, и упаковывает EXE в ZIP.
 
 ## Установка и запуск на Windows
 

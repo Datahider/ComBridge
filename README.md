@@ -38,8 +38,12 @@ Linux/Codex -> SSH tunnel -> 127.0.0.1:8088 -> ComBridge -> Win32 -> Windows des
 | POST | `/mouse/drag` | `{ "fromX": 100, "fromY": 100, "toX": 500, "toY": 500, "durationMs": 500 }` |
 | POST | `/keyboard/type` | `{ "text": "Привет, 1С!" }`; Unicode через `KEYEVENTF_UNICODE` |
 | POST | `/keyboard/hotkey` | `{ "keys": ["CTRL", "SHIFT", "S"] }` |
+| GET | `/clipboard/text` | Читает `CF_UNICODETEXT`; ответ `{ "text": "...", "length": 3 }` |
+| POST | `/clipboard/text` | `{ "text": "Новый текст" }`; полностью заменяет текст в буфе |
 
 Горячие клавиши: CTRL, ALT, SHIFT, WIN, ENTER, ESC, TAB, BACKSPACE, DELETE, SPACE, UP, DOWN, LEFT, RIGHT, HOME, END, PAGEUP, PAGEDOWN, F1–F12, A–Z, 0–9. Имена нечувствительны к регистру. Клавиши отпускаются в обратном порядке.
+
+Буфер обмена работает только с Unicode-текстом. Если `CF_UNICODETEXT` отсутствует, GET возвращает HTTP 409 и `clipboard_text_unavailable`. Ошибка открытия буфера не маскируется повторами. Максимальная длина при POST — 10 000 000 UTF-16 code units. Сам текст в лог не записывается.
 
 ## Сборка на Linux
 
@@ -80,6 +84,10 @@ curl --fail -H 'Content-Type: application/json' \
 curl --fail -H 'Content-Type: application/json' \
   -d '{"text":"Привет, 1С!"}' \
   http://127.0.0.1:18088/keyboard/type
+curl --fail http://127.0.0.1:18088/clipboard/text
+curl --fail -H 'Content-Type: application/json' \
+  -d '{"text":"Текст для буфера"}' \
+  http://127.0.0.1:18088/clipboard/text
 ```
 
 ## Известные ограничения

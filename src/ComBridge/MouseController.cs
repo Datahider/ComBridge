@@ -4,6 +4,7 @@ namespace ComBridge;
 
 public interface IMouseController
 {
+    MousePosition GetPosition(ScreenInfo info);
     void Move(int x, int y, ScreenInfo info);
     void Click(ClickRequest request, ScreenInfo info);
     void Scroll(ScrollRequest request, ScreenInfo info);
@@ -12,6 +13,13 @@ public interface IMouseController
 
 public sealed class MouseController : IMouseController
 {
+    public MousePosition GetPosition(ScreenInfo info)
+    {
+        DesktopService.EnsureWindows();
+        if (!NativeMethods.GetCursorPos(out var point))
+            throw new WindowsApiException("GetCursorPos", Marshal.GetLastWin32Error());
+        return new MousePosition(point.X - info.VirtualScreen.Left, point.Y - info.VirtualScreen.Top, point.X, point.Y);
+    }
     public void Move(int x, int y, ScreenInfo info) => Send([MoveInput(x, y, info)]);
 
     public void Click(ClickRequest request, ScreenInfo info)
@@ -86,3 +94,4 @@ public sealed class MouseController : IMouseController
     }
 }
 
+public sealed record MousePosition(int X, int Y, int DesktopX, int DesktopY);

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ComBridge;
 
@@ -14,10 +15,13 @@ internal static class NativeMethods
     internal const uint MOUSEEVENTF_WHEEL = 0x0800, MOUSEEVENTF_VIRTUALDESK = 0x4000, MOUSEEVENTF_ABSOLUTE = 0x8000;
     internal const uint KEYEVENTF_KEYUP = 0x0002, KEYEVENTF_UNICODE = 0x0004;
     internal const uint CF_UNICODETEXT = 13, GMEM_MOVEABLE = 0x0002;
+    internal const int SW_RESTORE = 9;
 
     [StructLayout(LayoutKind.Sequential)] internal struct RECT { internal int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] internal struct POINT { internal int X, Y; }
     [StructLayout(LayoutKind.Sequential)] internal struct MONITORINFO { internal uint cbSize; internal RECT rcMonitor, rcWork; internal uint dwFlags; }
     internal delegate bool MonitorEnumProc(nint monitor, nint hdc, nint rect, nint data);
+    internal delegate bool EnumWindowsProc(nint window, nint data);
 
     [StructLayout(LayoutKind.Sequential)] internal struct INPUT { internal uint type; internal InputUnion U; }
     [StructLayout(LayoutKind.Explicit)] internal struct InputUnion
@@ -59,4 +63,16 @@ internal static class NativeMethods
     [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GlobalUnlock(nint memory);
     [DllImport("kernel32.dll", SetLastError = true)] internal static extern nint GlobalFree(nint memory);
     [DllImport("kernel32.dll", SetLastError = true)] internal static extern nuint GlobalSize(nint memory);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetCursorPos(out POINT point);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool EnumWindows(EnumWindowsProc callback, nint data);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsWindowVisible(nint window);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsWindow(nint window);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsIconic(nint window);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowRect(nint window, out RECT rect);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetWindowTextLength(nint window);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetWindowText(nint window, StringBuilder text, int count);
+    [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(nint window, out uint process_id);
+    [DllImport("user32.dll")] internal static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool ShowWindowAsync(nint window, int command);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool SetForegroundWindow(nint window);
 }

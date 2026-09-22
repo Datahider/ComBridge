@@ -12,6 +12,7 @@ builder.Services.AddSingleton<IScreenCapture, ScreenCapture>();
 builder.Services.AddSingleton<IMouseController, MouseController>();
 builder.Services.AddSingleton<IKeyboardController, KeyboardController>();
 builder.Services.AddSingleton<IClipboardController, ClipboardController>();
+builder.Services.AddSingleton<IWindowController, WindowController>();
 builder.Services.AddSingleton<UiOperationGate>();
 
 var app = builder.Build();
@@ -49,6 +50,12 @@ app.Use(async (context, next) =>
         context.Response.StatusCode = StatusCodes.Status409Conflict;
         await context.Response.WriteAsJsonAsync(ApiErrors.ClipboardTextUnavailable(exception.Message));
     }
+    catch (WindowActivationException exception)
+    {
+        log.Write("WARN", exception.Message);
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        await context.Response.WriteAsJsonAsync(ApiErrors.WindowActivationFailed(exception.Message));
+    }
     catch (Exception exception) when (exception is WindowsApiException or PlatformNotSupportedException)
     {
         log.Write("ERROR", exception.Message);
@@ -73,11 +80,26 @@ app.MapGet("/health", (IDesktopService desktop) =>
 app.MapGet("/screen/info", async (IDesktopService desktop, UiOperationGate gate, CancellationToken token) =>
     await gate.RunAsync(() => Task.FromResult(desktop.RequireScreenInfo()), token));
 
-app.MapGet("/screen", async (IDesktopService desktop, IScreenCapture capture, UiOperationGate gate, CancellationToken token) =>
+app.MapGet("/screen", async (int? monitor, int? x, int? y, int? width, int? height, string? format, int? quality,
+    IDesktopService desktop, IScreenCapture capture, UiOperationGate gate, CancellationToken token) =>
 {
-    var png = await gate.RunAsync(() => Task.FromResult(capture.CapturePng(desktop.RequireScreenInfo())), token);
-    return Results.File(png, "image/png");
+    var result = await gate.RunAsync(() =>
+    {
+        var info = desktop.RequireScreenInfo();
+        var request = new ScreenRequest(monitor, x, y, width, height, format ?? "png", quality ?? 80);
+        var area = ScreenRequestResolver.Resolve(info, request);
+        var output = ScreenRequestResolver.ResolveFormat(request.Format, request.Quality);
+        return Task.FromResult((Bytes: capture.Capture(info, area, output), Output: output));
+    }, token);
+    return Results.File(result.Bytes, result.Output.ContentType);
 });
+
+app.MapGet("/windows", (IDesktopService desktop, IWindowController windows, UiOperationGate gate, CancellationToken token) =>
+    gate.RunAsync(() => Task.FromResult(windows.List(desktop.RequireScreenInfo().VirtualScreen)), token));
+app.MapPost("/windows/activate", (ActivateWindowRequest request, IWindowController windows, UiOperationGate gate, CancellationToken token) =>
+    gate.RunAsync(() => Task.FromResult(windows.Activate(request.Id)), token));
+app.MapGet("/mouse/position", (IDesktopService desktop, IMouseController mouse, UiOperationGate gate, CancellationToken token) =>
+    gate.RunAsync(() => Task.FromResult(mouse.GetPosition(desktop.RequireScreenInfo())), token));
 
 app.MapPost("/mouse/move", (MoveRequest request, IDesktopService desktop, IMouseController mouse, UiOperationGate gate, CancellationToken token) =>
     Command(gate, token, log, "mouse/move", () => mouse.Move(request.X, request.Y, desktop.RequireScreenInfo())));

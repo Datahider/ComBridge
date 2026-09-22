@@ -20,6 +20,7 @@ public static class ApiErrors
     public static ApiError DesktopUnavailable(string message) => new("desktop_unavailable", message);
     public static ApiError WindowsApi(string message) => new("windows_api_error", message);
     public static ApiError ClipboardTextUnavailable(string message) => new("clipboard_text_unavailable", message);
+    public static ApiError WindowActivationFailed(string message) => new("window_activation_failed", message);
 }
 
 public sealed class RequestValidationException(string message) : Exception(message);

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ComBridge/ComBridge.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ComBridge.Tests/ComBridge.Tests.csproj" />
+  </Folder>
+</Solution>
